@@ -1,0 +1,79 @@
+[tool.poetry]
+name = "ffxiv-broker"
+version = "0.1.0"
+description = "FFXIV Market Advisor backend (FastAPI + Redis + Universalis/XIVAPI)"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [
+    { include = "broker" }
+]
+
+[tool.poetry.dependencies]
+python = ">=3.11,<4.0"
+fastapi = "^0.111.0"
+uvicorn = {version = "^0.30.0", extras = ["standard"]}
+httpx = {version = "^0.27.0", extras = ["http2"]}
+tenacity = "^8.4.2"
+redis = "^5.0.4"
+pydantic = "^2.8.0"
+pydantic-settings = "^2.3.4"
+structlog = "^24.1.0"
+openpyxl = "^3.1.2"
+aiofiles = "^23.2.1"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+pytest-asyncio = "^0.23.7"
+coverage = "^7.5.4"
+black = "^24.4.2"
+isort = "^5.13.2"
+ruff = "^0.5.0"
+mypy = "^1.10.0"
+pre-commit = "^3.7.1"
+types-redis = "^4.6.0.20240425"
+types-openpyxl = "^3.1.0.20240524"
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["broker", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E","F","W","I","B","UP","N","S","C4","C90","ARG","SIM","PL","RUF"
+]
+ignore = ["S101", "PLR0913", "N803", "N802"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_any_generics = true
+no_implicit_optional = true
+strict_optional = true
+check_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
