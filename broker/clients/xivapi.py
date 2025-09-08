@@ -68,3 +68,30 @@ async def get_recipe(item_id: int) -> dict[str, Any] | None:
 
     # TODO: Garland fallback (static JSON) if XIVAPI incomplete
     return None
+
+
+async def get_item_name(item_id: int) -> str | None:
+    """Fetch item display name from XIVAPI, cached.
+
+    Cache key: x:name:{item_id}
+    Returns None if not found or on 404.
+    """
+    key = ns("x", f"name:{item_id}")
+    cached = await get_json(key)
+    if cached is not None:
+        return cast(str | None, cached)
+
+    async with _client() as client:
+        async for attempt in _retryer():
+            with attempt:
+                resp = await client.get(f"/item/{item_id}", params={"columns": "ID,Name"})
+                if resp.status_code == HTTP_NOT_FOUND:
+                    return None
+                resp.raise_for_status()
+                data = cast(dict[str, Any], resp.json())
+                name = cast(str | None, data.get("Name"))
+                await set_json(key, name, ttl=settings.CACHE_TTL_LONG)
+                _log.info("xivapi_item_name", item_id=item_id, name=name)
+                return name
+
+    return None
