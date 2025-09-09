@@ -22,6 +22,20 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = Field(default="INFO")
 
+    # Optional bootstrap of local catalog file at startup (id->name JSON)
+    CATALOG_BOOTSTRAP_PATH: str | None = Field(default="data/catalog_names_en.json")
+
+    # Advice tuning (weights, thresholds)
+    ADVICE_W_ROI: float = Field(default=0.7, ge=0.0)
+    ADVICE_W_SPD: float = Field(default=0.5, ge=0.0)
+    ADVICE_SPD_NORM: float = Field(default=10.0, gt=0.0)
+    ADVICE_PENALTY_SATURO: float = Field(default=0.2, ge=0.0)
+    ADVICE_PENALTY_INSTABILE: float = Field(default=0.2, ge=0.0)
+    ADVICE_RISK_LOW: float = Field(default=0.3, ge=0.0, le=1.0)
+    ADVICE_RISK_MED: float = Field(default=0.6, ge=0.0, le=1.0)
+    ADVICE_SATURATION_MULT: float = Field(default=5.0, gt=0.0)
+    FLIP_THRESHOLD: float = Field(default=0.7, gt=0.0, le=1.0)
+
     # Optional whitelists (comma-separated)
     ALLOWED_WORLDS: str | None = None
     ALLOWED_DATA_CENTERS: str | None = None

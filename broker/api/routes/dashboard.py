@@ -97,8 +97,20 @@ async def overview(
     names_hint: dict[int, str] = {}
     if source == "advice":
         try:
-            data = await advice_endpoint(world=world, roi_min=roi_min,
-                                         limit=limit)
+            # Call with explicit defaults to avoid FastAPI Query default objects
+            data = await advice_endpoint(
+                world=world,
+                roi_min=roi_min,
+                limit=limit,
+                max_candidates=150,
+                offset=0,
+                ids=None,
+                min_spd=0.0,
+                min_price=0,
+                min_history=0,
+                target="avg",
+                q=None,
+            )
             for item in data.get("items", []):
                 iid = int(item.get("item_id"))
                 ids.append(iid)

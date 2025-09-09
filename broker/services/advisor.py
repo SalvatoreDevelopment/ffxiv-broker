@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..services.metrics import roi
+from ..config import settings
 
-RISK_LOW = 0.3
-RISK_MED = 0.6
+RISK_LOW = settings.ADVICE_RISK_LOW
+RISK_MED = settings.ADVICE_RISK_MED
 
 
 @dataclass
@@ -23,13 +24,13 @@ class AdviceItem:
 def compute_score(roi_value: float, sales_per_day: float, flags: list[str]) -> tuple[float, str]:
     # Normalize ROI to 0..1 over a rough range (-0.5..1.0)
     norm_roi = max(0.0, min(1.0, (roi_value + 0.5) / 1.5))
-    vend = max(0.0, min(1.0, sales_per_day / 10.0))
+    vend = max(0.0, min(1.0, sales_per_day / settings.ADVICE_SPD_NORM))
     penalty = 0.0
     if "saturo" in flags:
-        penalty += 0.2
+        penalty += settings.ADVICE_PENALTY_SATURO
     if "instabile" in flags:
-        penalty += 0.2
-    score = max(0.0, norm_roi * 0.7 + vend * 0.5 - penalty)
+        penalty += settings.ADVICE_PENALTY_INSTABILE
+    score = max(0.0, norm_roi * settings.ADVICE_W_ROI + vend * settings.ADVICE_W_SPD - penalty)
 
     risk = "basso"
     if score < RISK_LOW:

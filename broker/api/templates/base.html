@@ -12,51 +12,84 @@
     <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
     <!-- Project styles -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}" />
     <link rel="stylesheet" href="{{ url_for('static', path='css/dashboard.css') }}" />
   </head>
-  <body class="min-h-screen bg-slate-50 text-slate-900">
-    <header class="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
-      <div class="container mx-auto px-4 py-3 flex items-center gap-4">
-        <img src="{{ url_for('static', path='images/logo.png') }}" alt="FFXIV Market Advisor" class="h-8 w-8 rounded" />
-        <h1 class="text-lg font-semibold">FFXIV Market Advisor</h1>
-        <nav class="ml-auto flex items-center gap-4 text-sm">
-          <a class="nav-link" href="/dashboard">Dashboard</a>
-          <a class="nav-link" href="/dashboard/market">Mercato</a>
-          <a class="nav-link" href="/dashboard/portfolio">Portfolio</a>
-          <div class="flex items-center gap-2">
-            <label for="data-center-select" class="text-slate-500">Data Center</label>
-            <select id="data-center-select" class="input w-32">
+  <body class="min-h-screen bg-slate-50 text-slate-900" style="font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';">
+    <div class="app-shell flex min-h-screen">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar w-64 border-r border-slate-200">
+        <div class="logo-wrap p-8 flex items-center justify-center">
+          <img src="{{ url_for('static', path='images/logo.png') }}" alt="FFXIV" class="h-16 w-16 rounded logo-medallion" />
+        </div>
+        {% set path = request.url.path if request else '' %}
+        {% set is_market = path.startswith('/dashboard/market') %}
+        {% set is_portfolio = path.startswith('/dashboard/portfolio') %}
+        {% set is_dashboard = (path == '/dashboard' or path == '/dashboard/') %}
+        <nav class="px-2 py-2 text-sm">
+          <a class="nav-item flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-100 {{ 'active' if is_dashboard else '' }}" href="/dashboard" title="Dashboard">
+            <span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 3.75a.75.75 0 01.53.22l8.25 8.25a.75.75 0 11-1.06 1.06l-.72-.72V19.5a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-3.75h-3V19.5a.75.75 0 01-.75.75h-4.5A.75.75 0 013 19.5v-6.69l-.72.72a.75.75 0 11-1.06-1.06l8.25-8.25a.75.75 0 01.53-.22z"/></svg></span>
+            <span class="label">Dashboard</span></a>
+          <a class="nav-item flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-100 {{ 'active' if is_market else '' }}" href="/dashboard/market" title="Mercato">
+            <span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M2.25 2.25a.75.75 0 000 1.5h1.386l2.4 9.593a2.25 2.25 0 002.187 1.682h7.527a2.25 2.25 0 002.187-1.682l1.323-5.293a.75.75 0 10-1.456-.364l-1.323 5.293a.75.75 0 01-.73.556H8.223a.75.75 0 01-.73-.556L5.28 3.75h13.47a.75.75 0 000-1.5H2.25z"/><path d="M8.25 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM17.25 21a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/></svg></span>
+            <span class="label">Mercato</span></a>
+          <a class="nav-item flex items-center gap-3 px-3 py-2 rounded hover:bg-slate-100 {{ 'active' if is_portfolio else '' }}" href="/dashboard/portfolio" title="Portfolio">
+            <span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M2.25 7.5A2.25 2.25 0 014.5 5.25h15a2.25 2.25 0 012.25 2.25v9A2.25 2.25 0 0119.5 18.75h-15A2.25 2.25 0 012.25 16.5v-9z"/><path d="M8.25 5.25a.75.75 0 00-.75.75V7.5h9V6a.75.75 0 00-.75-.75h-7.5z"/></svg></span>
+            <span class="label">Portfolio</span></a>
+        </nav>
+        <div class="px-3 py-3 space-y-3 text-sm sidebar-config">
+          <div class="space-y-1">
+            <div class="text-slate-500 label">Data Center</div>
+            <select id="data-center-select" class="input w-full">
               <option value="">Seleziona...</option>
             </select>
           </div>
-          <div class="flex items-center gap-2">
-            <label for="world-select" class="text-slate-500">World</label>
-            <select id="world-select" class="input w-32" disabled>
+          <div class="space-y-1">
+            <div class="text-slate-500 label">World</div>
+            <select id="world-select" class="input w-full" disabled>
               <option value="">Seleziona Data Center</option>
             </select>
           </div>
-        </nav>
-      </div>
-    </header>
+          <div class="space-y-1">
+            <div class="text-slate-500 label">Tema</div>
+            <select id="theme-select" class="input w-full">
+              <option value="classic">Classic</option>
+              <option value="ffxiv" selected>FFXIV</option>
+            </select>
+          </div>
+        </div>
+      </aside>
 
-    <main class="container mx-auto px-4 py-6">
-      {% block content %}{% endblock %}
-    </main>
-
-    <footer class="mt-8 border-t border-slate-200 bg-white/60 backdrop-blur">
-      <div class="container mx-auto px-4 py-6 text-sm text-slate-600 flex justify-between">
-        <span>© FFXIV Market Advisor</span>
-        <span>
-          Powered by FastAPI • Universalis • XIVAPI
-        </span>
+      <!-- Main content -->
+      <div class="flex-1 flex flex-col min-h-screen">
+        <header class="bg-white/80 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
+          <div class="px-4 py-3 flex items-center gap-4">
+            <button id="sidebar-toggle" class="btn" title="Mostra/Nascondi menu">☰</button>
+            <h1 class="text-lg font-semibold" style="font-family: 'Cinzel', serif; letter-spacing:.3px;">FFXIV Market Advisor</h1>
+          </div>
+        </header>
+        <main class="px-4 py-6 container mx-auto">
+          {% block content %}{% endblock %}
+        </main>
+        <footer class="mt-auto border-t border-slate-200 bg-white/60 backdrop-blur">
+          <div class="container mx-auto px-4 py-6 text-sm text-slate-600 flex justify-between">
+            <span>© FFXIV Market Advisor</span>
+            <span>
+              Powered by FastAPI · Universalis · XIVAPI
+            </span>
+          </div>
+        </footer>
       </div>
-    </footer>
+    </div>
 
     <!-- Project scripts -->
     <script src="{{ url_for('static', path='js/main.js') }}" defer></script>
     <script src="{{ url_for('static', path='js/dashboard.js') }}" defer></script>
+    <script src="{{ url_for('static', path='js/advice.js') }}" defer></script>
     <script src="{{ url_for('static', path='js/charts.js') }}" defer></script>
     {% block extra_scripts %}{% endblock %}
   </body>

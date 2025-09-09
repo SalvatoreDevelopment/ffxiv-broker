@@ -9,6 +9,73 @@
 /* Base */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+h1,h2,h3 { font-family: 'Cinzel', serif; }
+
+/* Layout */
+.sidebar { transition: width .2s ease; background: #fff; overflow: hidden; }
+.sidebar.collapsed { width: 64px; }
+.sidebar.collapsed .label { display: none; }
+.sidebar .nav-item { color: #0f172a; height: 40px; }
+.sidebar.collapsed .nav-item { justify-content: center; padding-left: .5rem; padding-right: .5rem; }
+.sidebar.collapsed .sidebar-config { display: none; }
+.nav-icon { width: 36px; height: 36px; border-radius: .5rem; display: grid; place-items: center; }
+.nav-item.active .nav-icon { background: #e2e8f0; }
+body.theme-ffxiv .nav-item.active .nav-icon { background: rgba(59,130,246,.18); }
+.nav-item.active { background: #eef2ff; color: #1d4ed8; }
+body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji'; }
+h1,h2,h3 { font-family: 'Cinzel', serif; }
+
+/* Layout */
+.sidebar { transition: width .2s ease; background: #fff; }
+.sidebar.collapsed { width: 64px; }
+.sidebar.collapsed .label { display: none; }
+.sidebar .nav-item { color: #0f172a; }
+
+/* FFXIV theme */
+body.theme-ffxiv {
+  background:
+    radial-gradient(1200px 800px at 100% -20%, rgba(59,130,246,.08), transparent),
+    linear-gradient(180deg, #0f172a 0%, #0b1220 100%);
+  color: #e2e8f0; /* slate-200 */
+}
+body.theme-ffxiv header {
+  background: linear-gradient(180deg, rgba(2,6,23,.85), rgba(2,6,23,.65));
+  border-bottom-color: rgba(148,163,184,.2);
+}
+body.theme-ffxiv .card {
+  background: rgba(15,23,42,.72);
+  border-color: rgba(148,163,184,.25);
+  box-shadow: 0 6px 20px rgba(2,6,23,.35);
+}
+body.theme-ffxiv .card-header {
+  background: linear-gradient(90deg,#1f2a44,#1a2238);
+  border-bottom-color: rgba(148,163,184,.25);
+  color: #f8fafc;
+  font-family: 'Cinzel', serif;
+  letter-spacing: .3px;
+}
+body.theme-ffxiv .btn { background: rgba(30,41,59,.9); color:#e2e8f0; border-color: rgba(148,163,184,.3); }
+body.theme-ffxiv .btn:hover { box-shadow: 0 8px 20px rgba(2,6,23,.25); }
+body.theme-ffxiv .btn-primary { background: linear-gradient(180deg,#60a5fa,#2563eb); color:#fff; border-color: transparent; }
+body.theme-ffxiv .input { background: rgba(2,6,23,.55); color:#e2e8f0; border-color: rgba(148,163,184,.28); }
+body.theme-ffxiv .input:focus { box-shadow: 0 0 0 3px rgba(96,165,250,.25); border-color:#60a5fa; }
+body.theme-ffxiv .badge { background: rgba(148,163,184,.18); color:#e2e8f0; }
+body.theme-ffxiv a.nav-link { color:#e2e8f0; }
+body.theme-ffxiv footer { background: rgba(2,6,23,.6); border-top-color: rgba(148,163,184,.18); }
+body.theme-ffxiv .sidebar { background: linear-gradient(180deg, #0b1220, #0f172a); border-right-color: rgba(148,163,184,.25); }
+body.theme-ffxiv .sidebar .nav-item { color:#e2e8f0; }
+body.theme-ffxiv .sidebar .nav-item:hover { background: rgba(148,163,184,.12); }
+body.theme-ffxiv .nav-item.active { background: rgba(59,130,246,.18); color:#93c5fd; }
+
+/* Logo medallion */
+.logo-medallion { border: 1px solid #d4af37; box-shadow: 0 0 18px rgba(212,175,55,.25); }
+.sidebar.collapsed .logo-wrap { padding: .75rem; }
+.sidebar.collapsed .logo-medallion { height: 2rem; width: 2rem; border: none; box-shadow: none; }
+.sidebar .nav-item svg { display: block; }
+body.theme-ffxiv .sidebar { background: linear-gradient(180deg, #0b1220, #0f172a); border-right-color: rgba(148,163,184,.25); }
+body.theme-ffxiv .sidebar .nav-item { color:#e2e8f0; }
+body.theme-ffxiv .sidebar .nav-item:hover { background: rgba(148,163,184,.12); }
 
 /* Cards */
 .card {
@@ -70,4 +137,3 @@ html, body { height: 100%; }
 /* Hover effects */
 .hover-pop { transition: transform .12s ease; }
 .hover-pop:hover { transform: translateY(-2px); }
-

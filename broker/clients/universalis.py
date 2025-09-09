@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Any, cast
 
 import httpx
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -85,3 +85,32 @@ async def get_items_world(item_ids: list[int], world: str) -> list[dict[str, Any
 
     results = await asyncio.gather(*[_fetch_one(i) for i in item_ids])
     return results
+
+
+async def get_marketable_items() -> list[int]:
+    """Fetch the Universalis global list of marketable (tradable) item IDs.
+
+    Cached under key: u:marketable
+    """
+    key = ns("u", "marketable")
+    cached = await get_json(key)
+    if cached is not None:
+        try:
+            return [int(x) for x in cast(list[Any], cached)]
+        except Exception:
+            # fall through to refetch on malformed cache
+            pass
+
+    async with _client() as client:
+        async for attempt in _retryer():
+            with attempt:
+                resp = await client.get("/marketable")
+                resp.raise_for_status()
+                data = resp.json()
+                ids = [int(x) for x in data] if isinstance(data, list) else []
+                # Store without TTL to make this job-driven and persistent
+                await set_json(key, ids, ttl=None)
+                _log.info("universalis_marketable_loaded", count=len(ids))
+                return ids
+
+    return []

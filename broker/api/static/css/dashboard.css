@@ -17,3 +17,32 @@
   color: #0f172a;
 }
 
+/* KPI styles */
+.kpi .card-body { padding: .75rem .875rem; }
+.kpi .text-xl { font-family: 'Cinzel', serif; }
+.kpi-progress { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin-top: .5rem; }
+.kpi-progress > div { height: 100%; width: 0%; background: var(--color-primary); transition: width .2s ease; }
+body.theme-ffxiv .kpi-progress { background: rgba(148,163,184,.18); }
+body.theme-ffxiv .kpi-progress > div { background: linear-gradient(90deg,#60a5fa,#2563eb); }
+
+/* Sticky table header for advice */
+.table-sticky thead th { position: sticky; top: 0; background: #ffffff; z-index: 1; }
+body.theme-ffxiv .table-sticky thead th { background: #0f172a; }
+.table-sticky thead th[data-sort] { cursor: pointer; }
+
+/* Compact table mode */
+.table-compact thead th, .table-compact tbody td { padding: .35rem .5rem; font-size: .9rem; }
+/* Simple spinner */
+.spinner { width: 16px; height: 16px; border: 2px solid #cbd5e1; border-top-color: transparent; border-radius: 9999px; display: inline-block; animation: spin .8s linear infinite; }
+.hidden { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Tabs */
+.tabs { display: flex; gap: .5rem; border-bottom: 1px solid #e2e8f0; margin-bottom: .75rem; }
+.tab { padding: .35rem .75rem; border: 1px solid transparent; border-radius: .5rem .5rem 0 0; }
+.tab.active { border-color: #e2e8f0; border-bottom-color: transparent; background: #fff; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+body.theme-ffxiv .tabs { border-bottom-color: rgba(148,163,184,.25); }
+body.theme-ffxiv .tab { color: #e2e8f0; }
+body.theme-ffxiv .tab.active { background: rgba(15,23,42,.72); border-color: rgba(148,163,184,.25); }

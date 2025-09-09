@@ -5,6 +5,7 @@ import time
 from collections.abc import Iterable
 
 from ..models.market import Sale
+from ..config import settings
 
 
 def _cutoff_ts(days: int) -> int:
@@ -23,6 +24,34 @@ def avg_price(history: Iterable[Sale | dict[str, object]], days: int = 7) -> flo
     return statistics.mean(prices)
 
 
+def quantile_price(
+    history: Iterable[Sale | dict[str, object]],
+    q: float = 0.5,
+    days: int = 7,
+) -> float | None:
+    """Return the price quantile (e.g., median for q=0.5) over the window.
+
+    Uses per-sale prices (unweighted). For robustness and speed we avoid weighting by
+    quantities; adjust if needed.
+    """
+    cutoff = _cutoff_ts(days)
+    prices: list[float] = []
+    q = max(0.0, min(1.0, q))
+    for rec in history:
+        sale = Sale.model_validate(rec) if isinstance(rec, dict) else rec
+        if sale.timestamp >= cutoff:
+            prices.append(float(sale.price_per_unit))
+    if not prices:
+        return None
+    prices.sort()
+    idx = int(round((len(prices) - 1) * q))
+    return prices[idx]
+
+
+def median_price(history: Iterable[Sale | dict[str, object]], days: int = 7) -> float | None:
+    return quantile_price(history, q=0.5, days=days)
+
+
 def sales_per_day(history: Iterable[Sale | dict[str, object]], days: int = 7) -> float:
     cutoff = _cutoff_ts(days)
     qty = 0
@@ -31,6 +60,16 @@ def sales_per_day(history: Iterable[Sale | dict[str, object]], days: int = 7) ->
         if sale.timestamp >= cutoff:
             qty += int(sale.quantity)
     return qty / float(days)
+
+
+def units_sold(history: Iterable[Sale | dict[str, object]], days: int = 7) -> int:
+    cutoff = _cutoff_ts(days)
+    qty = 0
+    for rec in history:
+        sale = Sale.model_validate(rec) if isinstance(rec, dict) else rec
+        if sale.timestamp >= cutoff:
+            qty += int(sale.quantity)
+    return qty
 
 
 def roi(
@@ -47,10 +86,10 @@ def roi(
 
 
 def saturation_flag(stock_count: int, spd: float) -> bool:
-    return stock_count > 5.0 * spd
+    return stock_count > settings.ADVICE_SATURATION_MULT * spd
 
 
 def flip_flag(lowest: float, avg7: float | None) -> bool:
     if avg7 is None:
         return False
-    return lowest < 0.7 * avg7
+    return lowest < settings.FLIP_THRESHOLD * avg7

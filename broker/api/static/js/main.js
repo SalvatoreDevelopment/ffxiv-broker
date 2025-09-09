@@ -44,8 +44,28 @@ window.App = (() => {
   };
 
   const api = {
-    advice: (world, { roi_min = 0, limit = 20 } = {}) =>
-      json(`/advice?world=${encodeURIComponent(world)}&roi_min=${roi_min}&limit=${limit}`),
+    advice: (world, opts = {}) => {
+      const {
+        roi_min = 0,
+        limit = 20,
+        max_candidates,
+        offset,
+        min_spd,
+        min_price,
+        min_history,
+        target,
+        q,
+      } = opts || {};
+      const p = new URLSearchParams({ world, roi_min: String(roi_min), limit: String(limit) });
+      if (max_candidates != null) p.set('max_candidates', String(max_candidates));
+      if (offset != null) p.set('offset', String(offset));
+      if (min_spd != null) p.set('min_spd', String(min_spd));
+      if (min_price != null) p.set('min_price', String(min_price));
+      if (min_history != null) p.set('min_history', String(min_history));
+      if (target) p.set('target', String(target));
+      if (q != null) p.set('q', String(q));
+      return json(`/advice?${p.toString()}`);
+    },
     marketItem: (itemId, world) => json(`/market/item/${itemId}?world=${encodeURIComponent(world)}`),
     overview: (world, limit = 8) => json(`/dashboard/data/overview?world=${encodeURIComponent(world)}&limit=${limit}`),
     worlds: (dataCenter = null) => {
@@ -55,9 +75,43 @@ window.App = (() => {
       return json(url);
     },
     dataCenters: () => json(`/dashboard/data/data-centers`),
+    catalogSearch: (q, limit = 20) => json(`/catalog/search?q=${encodeURIComponent(q||'')}&limit=${limit}`),
+    catalogItem: (id) => json(`/catalog/item/${id}`),
   };
 
   onReady(async () => {
+    // Theme handling
+    const applyTheme = (name) => {
+      document.body.classList.toggle('theme-ffxiv', name === 'ffxiv');
+      document.body.classList.toggle('theme-classic', name === 'classic');
+    };
+    const themeSelect = document.getElementById('theme-select');
+    const savedTheme = localStorage.getItem('ffxiv_theme') || 'ffxiv';
+    applyTheme(savedTheme);
+    if (themeSelect) {
+      themeSelect.value = savedTheme;
+      themeSelect.addEventListener('change', () => {
+        const v = themeSelect.value || 'classic';
+        applyTheme(v);
+        localStorage.setItem('ffxiv_theme', v);
+      });
+    }
+
+    // Sidebar toggle
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebar-toggle');
+    const applySidebar = (collapsed) => {
+      if (!sidebar) return;
+      sidebar.classList.toggle('collapsed', !!collapsed);
+    };
+    const savedCollapsed = localStorage.getItem('ffxiv_sidebar_collapsed') === '1';
+    applySidebar(savedCollapsed);
+    toggle?.addEventListener('click', () => {
+      const now = !(localStorage.getItem('ffxiv_sidebar_collapsed') === '1');
+      localStorage.setItem('ffxiv_sidebar_collapsed', now ? '1' : '0');
+      applySidebar(now);
+    });
+
     // Tooltips via data-notify
     document.querySelectorAll('[data-notify]')?.forEach((btn) => {
       btn.addEventListener('click', () => notify(btn.getAttribute('data-notify')));
@@ -152,5 +206,5 @@ window.App = (() => {
     }
   });
 
-  return { onReady, withLoading, tooltip, notify, fmt, getWorld, api };
+  return { onReady, withLoading, tooltip, notify, fmt, getWorld, api, json };
 })();

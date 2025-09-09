@@ -41,3 +41,19 @@ async def item_stats(
         sales_per_day_7d=spd,
         flags=flags,
     )
+
+
+@router.get("/item/{item_id}/raw")
+async def item_raw(
+    item_id: int,
+    world: str = Query(..., description="World name e.g. Phoenix"),
+) -> dict[str, object]:
+    """Return raw Universalis data (listings + recentHistory) for charting/frontend."""
+    _validate_world(world)
+    data = await get_item_world(item_id, world)
+    return {
+        "item_id": item_id,
+        "world": world,
+        "listings": data.get("listings", []),
+        "recentHistory": data.get("recentHistory", []),
+    }

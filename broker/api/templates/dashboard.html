@@ -7,6 +7,35 @@
   <p class="text-slate-600">Panoramica rapida del mercato e del tuo portafoglio.</p>
 </section>
 
+<!-- KPI Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6" id="kpi-grid">
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">Deal Attivi</div>
+    <div class="text-xl font-semibold" id="kpi-deals">-</div>
+  </div></div>
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">ROI Medio</div>
+    <div class="text-xl font-semibold" id="kpi-roi">-</div>
+  </div></div>
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">Vendite/g Medie</div>
+    <div class="text-xl font-semibold" id="kpi-spd">-</div>
+  </div></div>
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">Flip</div>
+    <div class="text-xl font-semibold" id="kpi-flips">-</div>
+  </div></div>
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">Saturo</div>
+    <div class="text-xl font-semibold" id="kpi-saturo">-</div>
+  </div></div>
+  <div class="card kpi"><div class="card-body">
+    <div class="text-xs text-slate-500">Scansionati</div>
+    <div class="text-sm" id="kpi-scanned">-</div>
+    <div class="kpi-progress"><div id="kpi-progress-bar"></div></div>
+  </div></div>
+</section>
+
 <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
   <!-- Market Overview -->
   <div class="card">
@@ -42,13 +71,138 @@
   </div>
 </section>
 
-<section>
+<section class="mb-8">
   <h3 class="text-xl font-semibold mb-3">Azioni Rapide</h3>
   <div class="flex flex-wrap gap-2">
     <a class="btn" href="/dashboard/market">Vai a Mercato</a>
     <a class="btn" href="/dashboard/portfolio">Vai a Portfolio</a>
     <button class="btn" data-notify="Funzione in arrivo">Sincronizza Dati</button>
   </div>
+</section>
+
+<section>
+  <div class="card">
+    <div class="card-header flex items-center justify-between">
+      <span>Consigli (tipo Saddlebag)</span>
+      <div class="flex items-center gap-2 flex-wrap">
+      
+        <div class="flex items-center gap-1" title="Mostra i controlli avanzati">
+          <input id="adv-expert" type="checkbox" class="accent-blue-500" />
+          <label for="adv-expert" class="text-sm text-slate-600">Esperto</label>
+        </div>
+
+        <div id="adv-advanced" class="flex items-center gap-2 flex-wrap">
+
+        <label class="text-sm text-slate-600">ROI min</label>
+        <input id="adv-roi-min" type="number" step="0.05" value="0.15" class="input w-24" title="Margine minimo richiesto" />
+
+        <label class="text-sm text-slate-600">Vendite/g ≥</label>
+        <input id="adv-min-spd" type="number" step="0.1" value="0.5" class="input w-24" title="Velocità minima di vendita (7g)" />
+
+        <label class="text-sm text-slate-600">Prezzo ≥</label>
+        <input id="adv-min-price" type="number" step="1" value="1000" class="input w-28" title="Prezzo target minimo (gil)" />
+
+        <label class="text-sm text-slate-600">Storico ≥</label>
+        <input id="adv-min-history" type="number" step="1" value="0" class="input w-20" title="Unità vendute in 7g" />
+
+        <label class="text-sm text-slate-600">Target</label>
+        <select id="adv-target" class="input w-28" title="Baseline prezzo per ROI">
+          <option value="avg" selected>Media</option>
+          <option value="median">Mediana</option>
+          <option value="q">Quantile</option>
+        </select>
+        <input id="adv-q" type="number" step="0.05" min="0" max="1" value="0.6" class="input w-20" disabled title="Quantile (0..1)" />
+
+        <label class="text-sm text-slate-600">Limite</label>
+        <input id="adv-limit" type="number" value="20" min="1" max="100" class="input w-20" title="Numero massimo di risultati" />
+
+        <label class="text-sm text-slate-600">Profondita</label>
+        <input id="adv-scan-depth" type="number" value="150" min="10" max="1000" class="input w-24" title="Quanti item valutare (candidati)" />
+        </div>
+
+        <button id="adv-refresh" class="btn btn-primary">Aggiorna</button>
+        <a id="adv-export" class="btn" href="#">Export Excel</a>
+        <div class="flex items-center gap-1 ml-2" id="adv-presets">
+          <span class="text-sm text-slate-500">Preset:</span>
+          <button class="btn btn-xs" data-preset="conservative" title="ROI alto, vendite rapide">Conservativo</button>
+          <button class="btn btn-xs" data-preset="balanced" title="Equilibrato">Bilanciato</button>
+          <button class="btn btn-xs" data-preset="aggressive" title="Più opportunità">Aggressivo</button>
+        </div>
+        <button id="adv-reset" class="btn" title="Ripristina filtri">Reset</button>
+        <button id="adv-more" class="btn" title="Carica altri">Altri</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <div id="adv-chips" class="mb-2 text-sm flex flex-wrap gap-2 text-slate-600"></div>
+      <div class="overflow-x-auto">
+        <table class="table w-full table-sticky table-compact" id="adv-table">
+          <thead>
+            <tr>
+              <th data-sort="item">Item</th>
+              <th data-sort="roi" title="Ordina per ROI">ROI</th>
+              <th data-sort="spd" title="Ordina per Vendite/g">Vendite/g</th>
+              <th data-sort="score" title="Ordina per Score">Score</th>
+              <th data-sort="flags">Flags</th>
+              <th data-sort="risk">Rischio</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="mt-6">
+        <canvas id="adv-scatter" height="140"></canvas>
+      </div>
+      <div id="adv-details" class="mt-4 hidden">
+        <div class="card">
+          <div class="card-header" id="adv-details-title">Dettagli</div>
+          <div class="card-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+              <div>
+                <div class="text-xs text-slate-500">Lowest</div>
+                <div class="font-semibold" id="adv-d-lowest">-</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Prezzo target</div>
+                <div class="font-semibold" id="adv-d-target">-</div>
+              </div>
+              <div>
+                <div class="text-xs text-slate-500">Vendite/g</div>
+                <div class="font-semibold" id="adv-d-spd">-</div>
+              </div>
+            </div>
+            <canvas id="adv-chart" height="120"></canvas>
+            <div class="mt-4">
+              <div class="tabs">
+                <button class="tab active" data-tab="listings">Listings</button>
+                <button class="tab" data-tab="arb">Arbitrage DC</button>
+              </div>
+              <div class="tab-panels">
+                <div id="adv-tab-listings" class="tab-panel active">
+                  <div class="overflow-x-auto">
+                    <table class="table w-full table-compact">
+                      <thead><tr><th>Prezzo</th><th>Qty</th><th>HQ</th></tr></thead>
+                      <tbody id="adv-listings-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="adv-tab-arb" class="tab-panel">
+                  <div class="text-sm text-slate-500 mb-2">Confronto lowest tra i Worlds del Data Center selezionato</div>
+                  <div class="overflow-x-auto">
+                    <table class="table w-full table-compact">
+                      <thead><tr><th>World</th><th>Lowest</th><th>Δ vs mediana DC</th></tr></thead>
+                      <tbody id="adv-arb-body"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
 </section>
 {% endblock %}
 
@@ -57,7 +211,12 @@
   document.addEventListener('DOMContentLoaded', () => {
     window.Dashboard?.init?.();
     window.Dashboard?.mountMarketOverview?.('market-overview-chart');
+    window.AdviceUI?.mount?.('adv-table', {
+      roiMinInput: 'adv-roi-min',
+      limitInput: 'adv-limit',
+      refreshBtn: 'adv-refresh',
+      exportLink: 'adv-export',
+    });
   });
 </script>
 {% endblock %}
-

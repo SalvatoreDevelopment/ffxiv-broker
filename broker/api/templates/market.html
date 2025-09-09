@@ -20,6 +20,33 @@
       <ul id="flip-ops" class="text-sm space-y-2"></ul>
     </div>
   </div>
+
+  <!-- Fine sezione iniziale -->
+</section>
+
+<section class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="card">
+    <div class="card-header">Analizza Item (storico)</div>
+    <div class="card-body space-y-3">
+      <div class="space-y-2">
+        <div class="relative">
+          <input id="mi-search" type="text" class="input w-full" placeholder="Cerca item per nome" autocomplete="off" />
+          <div id="mi-suggest" class="absolute z-10 bg-white border border-slate-200 rounded mt-1 w-full shadow hidden"></div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <input id="mi-id" type="number" class="input w-40" placeholder="Item ID" />
+        <button id="mi-load" class="btn btn-primary">Carica</button>
+      </div>
+      <canvas id="mi-chart" height="120"></canvas>
+    </div>
+  </div>
+  <div class="lg:col-span-2 card">
+    <div class="card-header">Dettagli</div>
+    <div class="card-body text-sm">
+      <div id="mi-details" class="text-slate-600">Seleziona un item per vedere lo storico prezzi e vendite.</div>
+    </div>
+  </div>
 </section>
 {% endblock %}
 
@@ -55,7 +82,88 @@
       console.warn('Errore caricamento mercato', e);
       document.getElementById('flip-ops').innerHTML = '<li class="text-red-600">Errore nel recupero dati</li>';
     }
+
+    // Item history loader
+    const loadBtn = document.getElementById('mi-load');
+    const idInput = document.getElementById('mi-id');
+    const searchInput = document.getElementById('mi-search');
+    const suggestBox = document.getElementById('mi-suggest');
+
+    const debounce = (fn, ms=200) => { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; };
+    const hideSuggest = () => { suggestBox?.classList?.add('hidden'); suggestBox.innerHTML = ''; };
+    const showSuggest = () => suggestBox?.classList?.remove('hidden');
+
+    const renderSuggest = (items=[]) => {
+      if (!suggestBox) return;
+      if (!items.length) { hideSuggest(); return; }
+      suggestBox.innerHTML = items.map(it => `
+        <div class="px-3 py-2 hover:bg-slate-100 cursor-pointer" data-id="${it.item_id}" data-name="${it.name}">
+          <span class="font-medium">${it.name || ('Item ' + it.item_id)}</span>
+          <span class="text-slate-500 text-xs ml-2">#${it.item_id}</span>
+        </div>
+      `).join('');
+      showSuggest();
+      suggestBox.querySelectorAll('[data-id]')?.forEach(el => {
+        el.addEventListener('click', () => {
+          const iid = el.getAttribute('data-id');
+          const nm = el.getAttribute('data-name');
+          if (iid) {
+            idInput.value = iid;
+            if (nm) searchInput.value = nm;
+            hideSuggest();
+            loadBtn?.click();
+          }
+        });
+      });
+    };
+
+    // Search input handler
+    if (searchInput) {
+      document.addEventListener('click', (e) => {
+        if (!suggestBox?.contains(e.target) && e.target !== searchInput) hideSuggest();
+      });
+      searchInput.addEventListener('input', debounce(async () => {
+        const q = searchInput.value.trim();
+        if (q.length < 2) { hideSuggest(); return; }
+        try {
+          const res = await App.api.catalogSearch(q, 12);
+          renderSuggest(res.items || []);
+        } catch (e) {
+          console.warn('catalog search error', e);
+          hideSuggest();
+        }
+      }, 250));
+      searchInput.addEventListener('focus', () => {
+        const q = searchInput.value.trim();
+        if (q.length >= 2 && suggestBox?.innerHTML) showSuggest();
+      });
+    }
+    loadBtn?.addEventListener('click', async () => {
+      const id = parseInt(idInput?.value || '0', 10);
+      const w = App.getWorld();
+      if (!id) return App.notify('Inserisci un Item ID', 'error');
+      try {
+        const stats = await App.api.marketItem(id, w);
+        const raw = await App.json(`/market/item/${id}/raw?world=${encodeURIComponent(w)}`);
+        const history = Array.isArray(raw.recentHistory) ? raw.recentHistory : [];
+        const labels = history.map(h => new Date(h.timestamp * 1000).toLocaleDateString());
+        const prices = history.map(h => h.pricePerUnit);
+        window.Dashboard?.mountItemHistory?.('mi-chart', labels, prices);
+        const lowest = stats.lowest != null ? App.fmt.gil(stats.lowest) : '-';
+        const avg7 = stats.avg_price_7d != null ? App.fmt.gil(stats.avg_price_7d) : '-';
+        const spd = App.fmt.number(stats.sales_per_day_7d, { maximumFractionDigits: 2 });
+        document.getElementById('mi-details').innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-slate-500">Lowest:</span> <span class="font-semibold">${lowest}</span></div>
+            <div><span class="text-slate-500">Media 7g:</span> <span class="font-semibold">${avg7}</span></div>
+            <div><span class="text-slate-500">Vendite/g:</span> <span class="font-semibold">${spd}</span></div>
+            <div><span class="text-slate-500">Flags:</span> <span class="font-semibold">${(stats.flags||[]).join(', ')||'-'}</span></div>
+          </div>`;
+      } catch (e) {
+        console.warn('Errore storico item', e);
+        App.notify('Errore nel caricamento storico', 'error');
+      }
+    });
   });
 </script>
 {% endblock %}
-
