@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Analisi Mercato - FFXIV Market Advisor{% endblock %}
+
+{% block content %}
+<section class="mb-6">
+  <h2 class="text-2xl font-bold mb-2">Analisi Mercato</h2>
+  <p class="text-slate-600">Panoramica dei prezzi, volumi e opportunità di flip.</p>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 card">
+    <div class="card-header">Trend Prezzi</div>
+    <div class="card-body">
+      <canvas id="market-trend-chart" height="140"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Opportunità</div>
+    <div class="card-body">
+      <ul id="flip-ops" class="text-sm space-y-2"></ul>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    const world = App.getWorld();
+    try {
+      const ov = await App.api.overview(world, 12);
+      const items = ov.items || [];
+      // Trend: vendite/giorno per item
+      const labels = items.map(s => s.name || `Item ${s.item_id}`);
+      const sales = items.map(s => s.sales_per_day_7d ?? 0);
+      window.Dashboard?.mountMarketTrend?.('market-trend-chart', labels, sales);
+
+      // Opportunità: mostra item con flag flip
+      const ul = document.getElementById('flip-ops');
+      const flips = items.filter(s => (s.flags || []).includes('flip'));
+      if (!flips.length) {
+        ul.innerHTML = '<li class="text-slate-500">Nessuna opportunità disponibile al momento.</li>';
+      } else {
+        ul.innerHTML = '';
+        flips.slice(0, 10).forEach(s => {
+          const li = document.createElement('li');
+          li.className = 'hover:underline hover-pop flex justify-between gap-3';
+          const price = App.fmt.gil(s.lowest ?? s.avg_price_7d ?? 0);
+          const tags = (s.flags||[]).map(f=>`<span class="badge">${f}</span>`).join(' ');
+          li.innerHTML = `<span>${s.name || 'Item ' + s.item_id}</span><span class="text-slate-600">${price} ${tags}</span>`;
+          ul.appendChild(li);
+        });
+      }
+    } catch (e) {
+      console.warn('Errore caricamento mercato', e);
+      document.getElementById('flip-ops').innerHTML = '<li class="text-red-600">Errore nel recupero dati</li>';
+    }
+  });
+</script>
+{% endblock %}
+

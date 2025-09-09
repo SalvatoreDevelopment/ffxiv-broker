@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Portfolio • FFXIV Market Advisor{% endblock %}
+
+{% block content %}
+<section class="mb-6">
+  <h2 class="text-2xl font-bold mb-2">Portfolio</h2>
+  <p class="text-slate-600">Tracking del valore, PnL e ROI.</p>
+</section>
+
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="card">
+    <div class="card-header">Snapshot</div>
+    <div class="card-body">
+      <ul class="space-y-2 text-sm">
+        <li class="flex justify-between"><span>Valore Totale</span><span class="font-semibold" id="pfv">—</span></li>
+        <li class="flex justify-between"><span>Profit/Loss</span><span class="font-semibold" id="pnl">—</span></li>
+        <li class="flex justify-between"><span>ROI</span><span class="font-semibold" id="roi">—</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="lg:col-span-2 card">
+    <div class="card-header">Allocazione</div>
+    <div class="card-body">
+      <canvas id="allocation-chart" height="140"></canvas>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    window.Dashboard?.mountAllocation?.('allocation-chart');
+  });
+</script>
+{% endblock %}
+

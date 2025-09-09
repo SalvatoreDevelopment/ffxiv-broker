@@ -1,0 +1,19 @@
+/* Dashboard-specific tweaks */
+.kpi {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .5rem;
+  padding: .75rem .875rem;
+  border: 1px dashed #e2e8f0;
+  border-radius: .5rem;
+}
+
+.badge {
+  display: inline-flex;
+  padding: .125rem .5rem;
+  font-size: .75rem;
+  border-radius: 9999px;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+

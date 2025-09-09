@@ -1,0 +1,9 @@
+warning: in the working copy of 'broker/api/main.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'broker/clients/xivapi.py', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docker/Dockerfile', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'pyproject.toml', LF will be replaced by CRLF the next time Git touches it
+broker/api/main.py
+broker/clients/xivapi.py
+docker/Dockerfile
+poetry.lock
+pyproject.toml
