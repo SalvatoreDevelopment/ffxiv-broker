@@ -2,6 +2,7 @@
 window.AdviceUI = (() => {
   const lsKey = 'ffxiv_watchlist';
   const cfgKey = 'ffxiv_advice_cfg';
+  let tabsBound = false;
 
   const loadWatchlist = () => { try { return JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch { return []; } };
   const saveWatchlist = (items) => localStorage.setItem(lsKey, JSON.stringify(items));
@@ -22,12 +23,39 @@ window.AdviceUI = (() => {
   const showDetails = async (itemId, row) => {
     try {
       const world = App.getWorld();
+      // Open drawer panel with overlay first so UI responds even if charts fail
+      const panel = document.getElementById('adv-details');
+      const overlay = document.getElementById('adv-overlay');
+      const loader = document.getElementById('adv-d-loading');
+      if (overlay) { overlay.classList.remove('hidden'); overlay.classList.add('visible'); }
+      if (panel) { panel.classList.remove('hidden'); panel.classList.add('open'); }
+      // Reset placeholders before loading
+      const t0 = document.getElementById('adv-details-title'); if (t0) t0.textContent = `Caricamento... (#${itemId})`;
+      const elLow0 = document.getElementById('adv-d-lowest'); if (elLow0) elLow0.textContent = '-';
+      const elTgt0 = document.getElementById('adv-d-target'); if (elTgt0) elTgt0.textContent = '-';
+      const elSpd0 = document.getElementById('adv-d-spd'); if (elSpd0) elSpd0.textContent = '-';
+      const lbody0 = document.getElementById('adv-listings-body'); if (lbody0) {
+        const skelRow = () => `<tr><td><div class="skeleton w-20 h-4 rounded"></div></td><td><div class="skeleton w-10 h-4 rounded"></div></td><td><div class="skeleton w-10 h-4 rounded"></div></td></tr>`;
+        lbody0.innerHTML = skelRow() + skelRow() + skelRow() + skelRow() + skelRow();
+      }
+      const arbBody0 = document.getElementById('adv-arb-body'); if (arbBody0) {
+        const skel = `<tr><td><div class="skeleton w-24 h-4 rounded"></div></td><td><div class="skeleton w-16 h-4 rounded"></div></td><td><div class="skeleton w-16 h-4 rounded"></div></td></tr>`;
+        arbBody0.innerHTML = skel + skel + skel;
+      }
+      if (loader) loader.classList.remove('hidden');
+      // Clear previous chart
+      window.Dashboard?.mountItemHistory?.('adv-chart', [], []);
+      const close = () => { if (panel) { panel.classList.remove('open'); } if (overlay) { overlay.classList.remove('visible'); overlay.classList.add('hidden'); } };
+      document.getElementById('adv-close')?.addEventListener('click', close, { once: true });
+      overlay?.addEventListener('click', close, { once: true });
+      const onKey = (ev) => { if (ev.key === 'Escape') close(); };
+      document.addEventListener('keydown', onKey, { once: true });
+      // Then fetch and render charts
       const raw = await App.json(`/market/item/${itemId}/raw?world=${encodeURIComponent(world)}`);
       const history = Array.isArray(raw.recentHistory) ? raw.recentHistory : [];
       const labels = history.map(h => new Date(h.timestamp * 1000).toLocaleDateString());
       const prices = history.map(h => h.pricePerUnit);
       window.Dashboard?.mountItemHistory?.('adv-chart', labels, prices);
-      document.getElementById('adv-details')?.classList?.remove('hidden');
       const t = document.getElementById('adv-details-title'); if (t) t.textContent = `${row?.name || 'Item ' + itemId} (#${itemId})`;
       const low = Array.isArray(raw.listings) && raw.listings.length ? Math.min(...raw.listings.map(l => l.pricePerUnit)) : null;
       const elLow = document.getElementById('adv-d-lowest'); if (elLow) elLow.textContent = low != null ? App.fmt.gil(low) : '-';
@@ -41,49 +69,49 @@ window.AdviceUI = (() => {
         lbody.innerHTML = listings.map(l => `<tr><td>${App.fmt.gil(l.pricePerUnit)}</td><td>${l.quantity}</td><td>${l.hq ? 'HQ' : 'NQ'}</td></tr>`).join('');
       }
 
-      // Arbitrage DC: compare lowest across worlds in selected DC
+      // Arbitrage DC: use server-side aggregation across worlds in selected DC
       const dcSel = document.getElementById('data-center-select');
       const arbBody = document.getElementById('adv-arb-body');
       if (dcSel && dcSel.value && arbBody) {
         try {
-          const worldsData = await App.api.worlds(dcSel.value);
-          const worlds = Array.isArray(worldsData.worlds) ? worldsData.worlds : [];
-          const results = [];
-          let idx = 0;
-          const worker = async () => {
-            while (idx < worlds.length) {
-              const w = worlds[idx++];
-              try {
-                const r = await App.json(`/market/item/${itemId}/raw?world=${encodeURIComponent(w)}`);
-                const lows = Array.isArray(r.listings) && r.listings.length ? Math.min(...r.listings.map(x => x.pricePerUnit)) : null;
-                results.push({ world: w, lowest: lows });
-              } catch {}
-            }
-          };
-          await Promise.all([worker(), worker(), worker()]);
+          const res = await App.json(`/market/arbitrage/${itemId}?dc=${encodeURIComponent(dcSel.value)}`);
+          const results = Array.isArray(res.results) ? res.results : [];
           const vals = results.map(r => r.lowest).filter(v => v != null).sort((a,b)=>a-b);
           const median = vals.length ? vals[Math.floor(vals.length/2)] : null;
+          // Sort by ascending price
           results.sort((a,b)=> (a.lowest??Infinity) - (b.lowest??Infinity));
-          arbBody.innerHTML = results.map(r => {
+          // Determine top 2 cheapest worlds (non-null)
+          const top = results.filter(r => r.lowest != null).slice(0, 2).map(r => r.world);
+          arbBody.innerHTML = results.map((r, idx) => {
             const delta = (median!=null && r.lowest!=null) ? (((r.lowest - median)/median)*100) : null;
             const cur = r.world === world ? 'font-semibold' : '';
-            return `<tr class="${cur}"><td>${r.world}</td><td>${r.lowest!=null?App.fmt.gil(r.lowest):'-'}</td><td>${delta!=null?delta.toFixed(1)+'%':'-'}</td></tr>`;
+            const badges = [];
+            if (idx === 0 && r.lowest != null) badges.push('<span class="badge">Best</span>');
+            else if (top.includes(r.world) && r.lowest != null) badges.push('<span class="badge">Top 2</span>');
+            if (cur) badges.push('<span class="badge">Current</span>');
+            const tags = badges.length ? ` <span class="ml-1">${badges.join(' ')}</span>` : '';
+            return `<tr class="${cur}"><td>${r.world}${tags}</td><td>${r.lowest!=null?App.fmt.gil(r.lowest):'-'}</td><td>${delta!=null?delta.toFixed(1)+'%':'-'}</td></tr>`;
           }).join('');
         } catch (e) { arbBody.innerHTML = '<tr><td colspan="3" class="text-slate-500">N/D</td></tr>'; }
       }
 
-      // Tabs behavior
-      const tabs = document.querySelectorAll('.tab');
-      const panels = document.querySelectorAll('.tab-panel');
-      tabs.forEach(t => t.addEventListener('click', () => {
-        tabs.forEach(x => x.classList.remove('active'));
-        panels.forEach(p => p.classList.remove('active'));
-        t.classList.add('active');
-        const target = t.getAttribute('data-tab');
-        document.getElementById(target==='arb' ? 'adv-tab-arb' : 'adv-tab-listings')?.classList.add('active');
-      }));
+      // Tabs behavior (bind once)
+      if (!tabsBound) {
+        const tabs = document.querySelectorAll('.tab');
+        const panels = document.querySelectorAll('.tab-panel');
+        tabs.forEach(t => t.addEventListener('click', () => {
+          tabs.forEach(x => x.classList.remove('active'));
+          panels.forEach(p => p.classList.remove('active'));
+          t.classList.add('active');
+          const target = t.getAttribute('data-tab');
+          document.getElementById(target==='arb' ? 'adv-tab-arb' : 'adv-tab-listings')?.classList.add('active');
+        }));
+        tabsBound = true;
+      }
+      if (loader) loader.classList.add('hidden');
     } catch (e) {
       console.warn('Dettagli item error', e);
+      if (loader) loader.classList.add('hidden');
     }
   };
 
@@ -91,10 +119,84 @@ window.AdviceUI = (() => {
   let sortKey = 'score';
   let sortDir = 'desc';
   let currentOffset = 0;
+  let sortBound = false;
+  const deltaCache = new Map(); // key: `${dc}:${iid}` -> { val, ts }
+  const DELTA_TTL = 120 * 1000; // ms
+  const DELTA_GOOD = -0.20; // -20%
+  const DELTA_GREAT = -0.35; // -35%
+
+  const setDeltaCell = (iid, text, cls='') => {
+    const cell = document.querySelector(`td[data-delta-for="${iid}"]`);
+    if (!cell) return;
+    cell.innerHTML = text;
+    cell.className = `dc-delta ${cls}`.trim();
+  };
+
+  const loadDeltas = async (rows) => {
+    const dcSel = document.getElementById('data-center-select');
+    const world = App.getWorld();
+    if (!dcSel || !dcSel.value) return; // no DC selected
+    let idx = 0;
+    const workers = 3;
+    const run = async () => {
+      while (idx < rows.length) {
+        const row = rows[idx++];
+        const iid = row.item_id;
+        const key = `${dcSel.value}:${iid}`;
+        // cache hit
+        const cached = deltaCache.get(key);
+        const now = Date.now();
+        if (cached && (now - cached.ts) < DELTA_TTL) {
+          const d = cached.val;
+          const cls = d <= DELTA_GREAT ? 'badge-delta great' : d <= DELTA_GOOD ? 'badge-delta good' : 'badge';
+          setDeltaCell(iid, d!=null?`<span class="${cls}">${(d*100).toFixed(1)}%</span>`:'-');
+          continue;
+        }
+        try {
+          const res = await App.json(`/market/arbitrage/${iid}?dc=${encodeURIComponent(dcSel.value)}`);
+          // delta vs dc median
+          const median = res && typeof res.median === 'number' ? res.median : null;
+          const homeLow = (typeof row.cost === 'number') ? row.cost : null; // lowest
+          let delta = null;
+          if (median && homeLow!=null && median>0) delta = (homeLow - median) / median;
+          deltaCache.set(key, { val: delta, ts: Date.now() });
+          const cls = (delta!=null && delta <= DELTA_GREAT) ? 'badge-delta great' : (delta!=null && delta <= DELTA_GOOD) ? 'badge-delta good' : 'badge';
+          setDeltaCell(iid, delta!=null?`<span class="${cls}">${(delta*100).toFixed(1)}%</span>`:'-');
+        } catch (e) {
+          setDeltaCell(iid, '-');
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: workers }, run));
+  };
+
+  const updateSortIndicators = (tableId) => {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const ths = table.querySelectorAll('thead th[data-sort]');
+    ths.forEach((th) => {
+      const key = th.getAttribute('data-sort');
+      const icon = th.querySelector('.sort-icon');
+      th.classList.remove('sorted');
+      if (icon) icon.textContent = '';
+      if (key === sortKey) {
+        th.classList.add('sorted');
+        if (icon) icon.textContent = sortDir === 'asc' ? '▲' : '▼';
+      }
+    });
+  };
 
   const sortRows = (rows) => {
     const r = [...rows];
-    const keyMap = { roi: (x)=>x.roi||0, spd: (x)=>x.sales_per_day||0, score: (x)=>x.score||0, item: (x)=>x.name||('Item '+x.item_id), risk: (x)=>x.risk||'' };
+    const keyMap = {
+      roi: (x)=>x.roi||0,
+      spd: (x)=>x.sales_per_day||0,
+      ppd: (x)=>x.profit_per_day||0,
+      ppu: (x)=>x.profit_unit||0,
+      score: (x)=>x.score||0,
+      item: (x)=>x.name||('Item '+x.item_id),
+      risk: (x)=>x.risk||''
+    };
     const getter = keyMap[sortKey] || keyMap.score;
     r.sort((a,b)=>{
       const va = getter(a), vb = getter(b);
@@ -110,18 +212,23 @@ window.AdviceUI = (() => {
     const tbody = table.querySelector('tbody');
     if (!tbody) return;
     if (!rows.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-center text-slate-500">Nessun risultato</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-center text-slate-500">Nessun risultato</td></tr>';
+      updateSortIndicators(tableId);
       return;
     }
     currentRows = rows;
     const sorted = sortRows(currentRows);
     tbody.innerHTML = '';
-    sorted.forEach((r) => {
+    sorted.forEach((r, idx) => {
       const tr = document.createElement('tr');
+      if (idx < 3) tr.classList.add('row-best');
       tr.innerHTML = `
         <td class="whitespace-nowrap">${r.name || 'Item ' + r.item_id}</td>
         <td>${(r.roi * 100).toFixed(1)}%</td>
         <td>${(r.sales_per_day ?? 0).toFixed(2)}</td>
+        <td>${App.fmt.gil(r.profit_per_day ?? 0)}</td>
+        <td>${App.fmt.gil(r.profit_unit ?? 0)}</td>
+        <td class="dc-delta" data-delta-for="${r.item_id}">-</td>
         <td>${(r.score ?? 0).toFixed(2)}</td>
         <td>${(r.flags || []).map((f) => `<span class='badge'>${f}</span>`).join(' ')}</td>
         <td>${r.risk || '-'}</td>
@@ -160,20 +267,37 @@ window.AdviceUI = (() => {
       });
     });
 
-    const thead = table.querySelector('thead');
-    thead?.querySelectorAll('th[data-sort]')?.forEach(th => {
-      th.addEventListener('click', () => {
-        const key = th.getAttribute('data-sort');
-        if (!key) return;
-        sortDir = (sortKey === key && sortDir==='desc') ? 'asc' : 'desc';
-        sortKey = key;
-        render(tableId, currentRows);
+    // Bind sort handlers only once to avoid multiple toggles per click
+    if (!sortBound) {
+      const thead = table.querySelector('thead');
+      thead?.querySelectorAll('th[data-sort]')?.forEach(th => {
+        th.addEventListener('click', () => {
+          const key = th.getAttribute('data-sort');
+          if (!key) return;
+          sortDir = (sortKey === key && sortDir==='desc') ? 'asc' : 'desc';
+          sortKey = key;
+          render(tableId, currentRows);
+        });
       });
-    });
+      sortBound = true;
+    }
+    // Update indicators each render
+    updateSortIndicators(tableId);
+
+    // Lazy load DC deltas if enabled
+    const showDelta = document.getElementById('adv-show-delta');
+    const dcSel = document.getElementById('data-center-select');
+    if (showDelta && showDelta.checked && dcSel && dcSel.value) {
+      loadDeltas(sorted);
+    }
   };
 
   const mount = (tableId, cfg = {}) => {
     const world = App.getWorld();
+    const showDeltaChk = document.getElementById('adv-show-delta');
+    // restore saved
+    const savedShowDelta = localStorage.getItem('ffxiv_show_delta') === '1';
+    if (showDeltaChk) { showDeltaChk.checked = savedShowDelta; showDeltaChk.addEventListener('change', () => { localStorage.setItem('ffxiv_show_delta', showDeltaChk.checked ? '1' : '0'); render(tableId, currentRows); }); }
     const roiMinInput = document.getElementById(cfg.roiMinInput || 'adv-roi-min');
     const limitInput = document.getElementById(cfg.limitInput || 'adv-limit');
     const refreshBtn = document.getElementById(cfg.refreshBtn || 'adv-refresh');

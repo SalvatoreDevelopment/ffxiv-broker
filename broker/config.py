@@ -28,13 +28,22 @@ class Settings(BaseSettings):
     # Advice tuning (weights, thresholds)
     ADVICE_W_ROI: float = Field(default=0.7, ge=0.0)
     ADVICE_W_SPD: float = Field(default=0.5, ge=0.0)
+    ADVICE_W_PPD: float = Field(default=0.4, ge=0.0)
     ADVICE_SPD_NORM: float = Field(default=10.0, gt=0.0)
+    ADVICE_PPD_NORM: float = Field(default=50000.0, gt=0.0)
     ADVICE_PENALTY_SATURO: float = Field(default=0.2, ge=0.0)
     ADVICE_PENALTY_INSTABILE: float = Field(default=0.2, ge=0.0)
+    ADVICE_PENALTY_COMP: float = Field(default=0.1, ge=0.0)
     ADVICE_RISK_LOW: float = Field(default=0.3, ge=0.0, le=1.0)
     ADVICE_RISK_MED: float = Field(default=0.6, ge=0.0, le=1.0)
     ADVICE_SATURATION_MULT: float = Field(default=5.0, gt=0.0)
     FLIP_THRESHOLD: float = Field(default=0.7, gt=0.0, le=1.0)
+
+    # Suspicious detection (anti-scam)
+    ADVICE_SUSPECT_ROI: float = Field(default=10.0, ge=0.0)  # 1000%+
+    ADVICE_SUSPECT_CV: float = Field(default=1.5, ge=0.0)
+    ADVICE_SUSPECT_ABS_PROFIT: int = Field(default=200_000, ge=0)  # gil/unit
+    ADVICE_MIN_SALES_SAFE: int = Field(default=5, ge=0)
 
     # Optional whitelists (comma-separated)
     ALLOWED_WORLDS: str | None = None

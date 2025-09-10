@@ -6,9 +6,10 @@ from typing import Any
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pathlib import Path
 
 from ...config import settings
-from ...clients.universalis import get_item_world
+from ...clients.universalis import get_item_world, get_items_world
 from ...clients.xivapi import get_item_name
 from ...services.metrics import (
     avg_price, sales_per_day, saturation_flag, flip_flag
@@ -17,7 +18,9 @@ from .advice import advice as advice_endpoint
 
 
 router = APIRouter()
-templates = Jinja2Templates(directory="broker/api/templates")
+# Resolve templates folder relative to this file
+_base_dir = Path(__file__).resolve().parent.parent  # broker/api
+templates = Jinja2Templates(directory=str(_base_dir / "templates"))
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -122,34 +125,48 @@ async def overview(
         seed_ids = [1675, 5, 19, 3976, 12538, 8166, 5330, 28064, 35946, 36064]
         ids = seed_ids[: max(1, min(limit, len(seed_ids)))]
 
-    # 2) Fetch in parallelo: market data + nomi XIVAPI
-    async def _one(iid: int) -> dict[str, Any]:
-        data = await get_item_world(iid, world)
+    # 2) Fetch batched market data e risolvi nomi
+    try:
+        data_list = await get_items_world(ids, world)
+    except Exception:
+        # Fallback singolo in caso di errore batch
+        data_list = []
+        for iid in ids:
+            try:
+                data_list.append(await get_item_world(iid, world))
+            except Exception:
+                data_list.append({"listings": [], "recentHistory": []})
+
+    async def _name(iid: int) -> str:
+        if iid in names_hint:
+            return str(names_hint[iid])
+        return await get_item_name(iid) or f"Item {iid}"
+
+    names = await asyncio.gather(*[_name(i) for i in ids])
+
+    items: list[dict[str, Any]] = []
+    for iid, data, name in zip(ids, data_list, names):
         listings = data.get("listings", [])
         history = data.get("recentHistory", [])
-        lowest = min((listing["pricePerUnit"] for listing in listings),
-                     default=None)
+        lowest = min((listing["pricePerUnit"] for listing in listings), default=None)
         a7 = avg_price(history, days=7)
         spd = sales_per_day(history, days=7)
         flags: list[str] = []
-        if (lowest is not None and
-                saturation_flag(stock_count=len(listings), spd=spd)):
+        if lowest is not None and saturation_flag(stock_count=len(listings), spd=spd):
             flags.append("saturo")
-        if (lowest is not None and a7 is not None and
-                flip_flag(float(lowest), float(a7))):
+        if lowest is not None and a7 is not None and flip_flag(float(lowest), float(a7)):
             flags.append("flip")
-        name = (names_hint.get(iid) or
-                await get_item_name(iid) or f"Item {iid}")
-        return {
-            "item_id": iid,
-            "name": name,
-            "lowest": lowest,
-            "avg_price_7d": a7,
-            "sales_per_day_7d": spd,
-            "flags": flags,
-        }
+        items.append(
+            {
+                "item_id": iid,
+                "name": name,
+                "lowest": lowest,
+                "avg_price_7d": a7,
+                "sales_per_day_7d": spd,
+                "flags": flags,
+            }
+        )
 
-    items = await asyncio.gather(*[_one(i) for i in ids])
     return {"world": world, "count": len(items), "items": items}
 
 

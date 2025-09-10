@@ -120,6 +120,7 @@
         <input id="adv-scan-depth" type="number" value="150" min="10" max="1000" class="input w-24" title="Quanti item valutare (candidati)" />
         </div>
 
+        <label class="flex items-center gap-1 text-sm text-slate-600" title="Mostra Δ DC per i risultati (più richieste)"><input id="adv-show-delta" type="checkbox" class="accent-emerald-600"> <span>Δ DC</span></label>
         <button id="adv-refresh" class="btn btn-primary">Aggiorna</button>
         <a id="adv-export" class="btn" href="#">Export Excel</a>
         <div class="flex items-center gap-1 ml-2" id="adv-presets">
@@ -138,10 +139,13 @@
         <table class="table w-full table-sticky table-compact" id="adv-table">
           <thead>
             <tr>
-              <th data-sort="item">Item</th>
-              <th data-sort="roi" title="Ordina per ROI">ROI</th>
-              <th data-sort="spd" title="Ordina per Vendite/g">Vendite/g</th>
-              <th data-sort="score" title="Ordina per Score">Score</th>
+              <th data-sort="item"><span class="th-text">Item</span><span class="sort-icon"></span></th>
+              <th data-sort="roi" title="Ordina per ROI"><span class="th-text">ROI</span><span class="sort-icon"></span></th>
+              <th data-sort="spd" title="Ordina per Vendite/g"><span class="th-text">Vendite/g</span><span class="sort-icon"></span></th>
+              <th data-sort="ppd" title="Ordina per Profit/giorno"><span class="th-text">Profit/g</span><span class="sort-icon"></span></th>
+              <th data-sort="ppu" title="Ordina per Profit/unità"><span class="th-text">Profit/u</span><span class="sort-icon"></span></th>
+              <th title="Delta vs mediana DC (richiede Data Center)"><span class="th-text">Δ DC</span></th>
+              <th data-sort="score" title="Ordina per Score"><span class="th-text">Score</span><span class="sort-icon"></span></th>
               <th data-sort="flags">Flags</th>
               <th data-sort="risk">Rischio</th>
               <th></th>
@@ -153,9 +157,10 @@
       <div class="mt-6">
         <canvas id="adv-scatter" height="140"></canvas>
       </div>
+      <div id="adv-overlay" class="hidden"></div>
       <div id="adv-details" class="mt-4 hidden">
         <div class="card">
-          <div class="card-header" id="adv-details-title">Dettagli</div>
+          <div class="card-header flex items-center justify-between"><span id="adv-details-title">Dettagli</span><button id="adv-close" class="btn" title="Chiudi">Chiudi</button></div>
           <div class="card-body">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
               <div>
@@ -173,6 +178,10 @@
             </div>
             <canvas id="adv-chart" height="120"></canvas>
             <div class="mt-4">
+              <div id="adv-d-loading" class="hidden text-sm text-slate-500 flex items-center gap-2 mb-2">
+                <span class="spinner"></span>
+                <span>Caricamento dettagli...</span>
+              </div>
               <div class="tabs">
                 <button class="tab active" data-tab="listings">Listings</button>
                 <button class="tab" data-tab="arb">Arbitrage DC</button>

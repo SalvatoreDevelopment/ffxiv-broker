@@ -137,3 +137,43 @@ body.theme-ffxiv .sidebar .nav-item:hover { background: rgba(148,163,184,.12); }
 /* Hover effects */
 .hover-pop { transition: transform .12s ease; }
 .hover-pop:hover { transform: translateY(-2px); }
+
+/* Drawer styles for Advice details */
+#adv-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); opacity: 0; pointer-events: none; transition: opacity .2s ease; z-index: 50; }
+#adv-overlay.visible { opacity: 1; pointer-events: auto; }
+#adv-details { position: fixed; top: 0; right: 0; height: 100%; width: min(560px, 100%); background: #fff; box-shadow: -8px 0 24px rgba(2,6,23,.18); transform: translateX(100%); transition: transform .25s ease; z-index: 60; }
+#adv-details.open { transform: translateX(0); }
+#adv-details .card { background: transparent; border: none; box-shadow: none; height: 100%; display: flex; flex-direction: column; }
+#adv-details .card-body { overflow-y: auto; }
+body.theme-ffxiv #adv-details { background: rgba(15,23,42,.97); border-left: 1px solid rgba(148,163,184,.25); color: #e2e8f0; box-shadow: -8px 0 30px rgba(2,6,23,.45); }
+body.theme-ffxiv #adv-overlay.visible { background: rgba(2,6,23,.6); }
+
+/* Tiny spinner */
+.spinner { width: 16px; height: 16px; border-radius: 9999px; border: 2px solid #cbd5e1; border-top-color: var(--color-primary); animation: spin .8s linear infinite; display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Skeleton shimmer */
+.skeleton { position: relative; overflow: hidden; background: #e5e7eb; }
+.skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent); animation: shimmer 1.2s infinite; }
+@keyframes shimmer { 100% { transform: translateX(100%); } }
+body.theme-ffxiv .skeleton { background: rgba(148,163,184,.18); }
+
+/* Highlight best rows (apply to cells to avoid column shift) */
+.row-best > td { background: #ecfdf5; /* emerald-50 */ border-bottom-color: #d1fae5; }
+.row-best > td:first-child { box-shadow: inset 4px 0 0 #10b981; }
+body.theme-ffxiv .row-best > td { background: rgba(16,185,129,.12); }
+body.theme-ffxiv .row-best > td:first-child { box-shadow: inset 4px 0 0 rgba(16,185,129,.85); }
+
+/* Delta chips */
+.badge-delta { display: inline-block; padding: .125rem .375rem; border-radius: .375rem; font-size: .75rem; }
+.badge-delta.good { background: #dcfce7; color: #065f46; }
+.badge-delta.great { background: #bbf7d0; color: #065f46; font-weight: 600; }
+body.theme-ffxiv .badge-delta.good { background: rgba(16,185,129,.18); color: #a7f3d0; }
+body.theme-ffxiv .badge-delta.great { background: rgba(16,185,129,.28); color: #a7f3d0; font-weight: 600; }
+
+/* Sort indicators */
+th[data-sort] { cursor: pointer; user-select: none; }
+th[data-sort] .sort-icon { display: inline-block; width: 1rem; margin-left: .25rem; color: #94a3b8; }
+th[data-sort].sorted .sort-icon { color: #0ea5e9; }
+body.theme-ffxiv th[data-sort] .sort-icon { color: #94a3b8; }
+body.theme-ffxiv th[data-sort].sorted .sort-icon { color: #60a5fa; }

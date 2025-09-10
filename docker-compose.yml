@@ -6,8 +6,22 @@ services:
     env_file: .env
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - WATCHFILES_FORCE_POLLING=1
     ports:
       - "8000:8000"
+    volumes:
+      - ./broker:/app/broker
+      - ./data:/app/data
+    command: [
+      "uvicorn",
+      "broker.api.main:app",
+      "--host","0.0.0.0",
+      "--port","8000",
+      "--reload",
+      "--reload-include","*.html",
+      "--reload-include","*.js",
+      "--reload-include","*.css"
+    ]
     depends_on:
       redis:
         condition: service_healthy

@@ -67,6 +67,11 @@ window.App = (() => {
       return json(`/advice?${p.toString()}`);
     },
     marketItem: (itemId, world) => json(`/market/item/${itemId}?world=${encodeURIComponent(world)}`),
+    marketItems: (ids, world) => {
+      const list = Array.isArray(ids) ? ids : String(ids||'').split(',').map(s=>parseInt(s,10)).filter(Boolean);
+      const p = new URLSearchParams({ world, ids: list.join(',') });
+      return json(`/market/items?${p.toString()}`);
+    },
     overview: (world, limit = 8) => json(`/dashboard/data/overview?world=${encodeURIComponent(world)}&limit=${limit}`),
     worlds: (dataCenter = null) => {
       const url = dataCenter ? 

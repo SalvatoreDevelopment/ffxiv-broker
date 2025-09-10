@@ -36,7 +36,12 @@ window.Dashboard = (() => {
   const mountItemHistory = (canvasId, labels, priceSeries) => {
     const el = document.getElementById(canvasId);
     if (!el || !window.Chart) return;
-    new Chart(el.getContext('2d'), {
+    try {
+      // Destroy previous chart instance on the same canvas if present (Chart.js v3+)
+      const prev = Chart.getChart ? Chart.getChart(el) : (el.__chartInstance || null);
+      if (prev && typeof prev.destroy === 'function') prev.destroy();
+    } catch {}
+    const chart = new Chart(el.getContext('2d'), {
       type: 'line',
       data: { labels, datasets: [
         { label: 'Prezzo/Unit (storico recente)', data: priceSeries, borderColor: colors.primary, tension: .3 }
@@ -47,6 +52,8 @@ window.Dashboard = (() => {
         scales: { y: { beginAtZero: false } }
       }
     });
+    // Fallback linkage for older Chart.js to allow destroy on next call
+    try { el.__chartInstance = chart; } catch {}
   };
 
   const mountScatterROI = (canvasId, items) => {
